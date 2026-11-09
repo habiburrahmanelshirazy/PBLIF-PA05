@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="id"><head><script src="admin.js"></script><script>document.write(HEAD('Kelola Belanja'))</script></head>
+<body>
+<div id="topnav"></div>
+<div class="admin-wrap"><aside class="admin-side" id="side"></aside>
+<main class="admin-main">
+ <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><h3 class="mb-0">Kelola Daftar Belanja</h3>
+  <div class="d-flex gap-2"><button class="btn btn-outline-success" onclick="fromLow()"><i class="fas fa-wand-magic-sparkles"></i> Tambah dari stok menipis</button>
+  <button class="btn btn-hijau" onclick="openForm()"><i class="fas fa-plus"></i> Tambah Item</button></div></div>
+ <div class="row g-3">
+  <div class="col-lg-8">
+   <div class="row g-2 mb-3"><div class="col-md-8"><input id="q" class="form-control" placeholder="Cari barang belanja..." oninput="render()"></div>
+    <div class="col-md-4"><select id="fk" class="form-select" onchange="render()"></select></div></div>
+   <div class="card stat-card"><div class="table-responsive"><table class="table align-middle mb-0">
+    <thead class="table-light"><tr><th style="width:40px"></th><th>Barang</th><th>Jumlah</th><th>Perkiraan harga</th><th class="text-end">Aksi</th></tr></thead><tbody id="tb"></tbody></table></div></div>
+  </div>
+  <div class="col-lg-4">
+   <div class="card stat-card mb-3"><div class="card-body text-center"><div class="text-muted">Estimasi Total Belanja</div><div class="fs-3 fw-bold text-success" id="total"></div>
+    <div class="small text-muted">Hanya item yang belum dibeli</div></div></div>
+   <div class="card stat-card"><div class="card-header bg-white fw-bold">Rincian per kategori</div><div class="card-body" id="kat"></div></div>
+  </div>
+ </div>
+</main></div>
+
+<div class="modal fade" id="m" tabindex="-1"><div class="modal-dialog"><form class="modal-content" id="f" novalidate>
+ <div class="modal-header"><h5 class="modal-title" id="mt">Item Belanja</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+ <div class="modal-body row g-3">
+  <div class="col-12"><label class="form-label">Nama barang</label><input id="nama" class="form-control" required><div class="invalid-feedback">Nama wajib diisi.</div></div>
+  <div class="col-12"><label class="form-label">Kategori</label><select id="kategori" class="form-select"></select></div>
+  <div class="col-6"><label class="form-label">Jumlah</label><input id="jumlah" type="number" min="1" class="form-control" required><div class="invalid-feedback">Isi angka &ge; 1.</div></div>
+  <div class="col-6"><label class="form-label">Satuan</label><select id="satuan" class="form-select"></select></div>
+  <div class="col-12"><label class="form-label">Perkiraan harga (Rp)</label><input id="harga" type="number" min="0" class="form-control" required><div class="invalid-feedback">Isi angka &ge; 0.</div></div>
+ </div>
+ <div class="modal-footer"><button type="button" class="btn btn-danger" data-bs-dismiss="modal">Batal</button><button class="btn btn-hijau">Simpan</button></div>
+</form></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+guard(); layout('belanja');
+let data = load('belanja'), editId = null;
+const modal = new bootstrap.Modal('#m'), $ = id => document.getElementById(id);
+$('fk').innerHTML = '<option value="">Semua kategori</option>' + opts(KATEGORI);
+$('kategori').innerHTML = opts(KATEGORI); $('satuan').innerHTML = opts(SATUAN);
+const save = () => DB.set('belanja', data);
+function render() {
+  const q = $('q').value.toLowerCase(), k = $('fk').value;
+  const rows = data.filter(d => d.nama.toLowerCase().includes(q) && (!k || d.kategori === k));
+  $('tb').innerHTML = rows.length ? rows.map(d => `<tr class="${d.dibeli ? 'text-muted' : ''}">
+   <td><input type="checkbox" class="form-check-input" ${d.dibeli ? 'checked' : ''} onchange="toggle(${d.id})" title="Tandai sudah dibeli"></td>
+   <td class="fw-semibold ${d.dibeli ? 'text-decoration-line-through' : ''}">${esc(d.nama)}<div class="small text-muted fw-normal">${esc(d.kategori)}</div></td>
+   <td>${d.jumlah} ${esc(d.satuan)}</td><td>${rupiah(d.harga)}</td>
+   <td class="text-end"><button class="btn btn-sm btn-outline-primary" onclick="openForm(${d.id})">Ubah</button> <button class="btn btn-sm btn-outline-danger" onclick="del(${d.id})">Hapus</button></td></tr>`).join('')
+   : '<tr><td colspan="5" class="text-center text-muted py-4">Belum ada item belanja.</td></tr>';
+  const aktif = data.filter(d => !d.dibeli); $('total').textContent = rupiah(aktif.reduce((a, b) => a + b.harga, 0));
+  const per = {}; aktif.forEach(d => per[d.kategori] = (per[d.kategori] || 0) + d.harga); const mx = Math.max(1, ...Object.values(per));
+  $('kat').innerHTML = Object.keys(per).length ? Object.entries(per).map(([n, v]) => `<div class="mb-3"><div class="d-flex justify-content-between"><span>${esc(n)}</span><b>${rupiah(v)}</b></div><div class="bar"><span style="width:${v / mx * 100}%"></span></div></div>`).join('') : '<div class="text-muted">Tidak ada data.</div>';
+}
+function toggle(id) { const d = data.find(x => x.id === id); d.dibeli = !d.dibeli; save(); render(); }
+function openForm(id) {
+  editId = id || null; $('f').classList.remove('was-validated');
+  const d = id ? data.find(x => x.id === id) : { nama: '', kategori: KATEGORI[0], jumlah: '', satuan: SATUAN[0], harga: '' };
+  $('mt').textContent = id ? 'Ubah Item Belanja' : 'Tambah Item Belanja';
+  ['nama', 'kategori', 'jumlah', 'satuan', 'harga'].forEach(k => $(k).value = d[k]); modal.show();
+}
+$('f').addEventListener('submit', e => {
+  e.preventDefault(); $('f').classList.add('was-validated'); if (!$('f').checkValidity()) return;
+  const o = { nama: $('nama').value.trim(), kategori: $('kategori').value, jumlah: +$('jumlah').value, satuan: $('satuan').value, harga: +$('harga').value };
+  if (!o.nama) return;
+  if (editId) Object.assign(data.find(x => x.id === editId), o); else data.push({ id: nextId(data), ...o, dibeli: false });
+  save(); modal.hide(); render(); toast('Item belanja disimpan');
+});
+function del(id) { const d = data.find(x => x.id === id); if (!confirm(`Hapus "${d.nama}" dari daftar belanja?`)) return; data = data.filter(x => x.id !== id); save(); render(); toast('Item dihapus', 'secondary'); }
+/* Tambah barang yang stoknya <= minimum. Jumlah beli = 2 x minimum - stok; harga diisi manual (0). */
+function fromLow() {
+  const stok = load('stok'); let n = 0;
+  stok.filter(s => s.jumlah <= s.min).forEach(s => {
+    if (data.some(b => !b.dibeli && b.nama.toLowerCase() === s.nama.toLowerCase())) return;
+    data.push({ id: nextId(data), nama: s.nama, kategori: s.kategori, jumlah: Math.max(1, s.min * 2 - s.jumlah), satuan: s.satuan, harga: 0, dibeli: false }); n++;
+  });
+  save(); render(); toast(n ? `${n} item ditambahkan. Lengkapi perkiraan harganya.` : 'Tidak ada barang baru yang perlu ditambahkan', n ? 'success' : 'secondary');
+}
+render();
+</script></body></html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="id"><head><script src="admin.js"></script><script>document.write(HEAD('Notifikasi'))</script></head>
+<body>
+<div id="topnav"></div>
+<div class="admin-wrap"><aside class="admin-side" id="side"></aside>
+<main class="admin-main">
+ <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div><h3 class="mb-1">Notifikasi</h3><p class="text-muted mb-0">Aktivitas stok terbaru yang dicatat admin.</p></div>
+  <div class="d-flex gap-2"><button class="btn btn-outline-success btn-sm" onclick="readAll()">Tandai semua dibaca</button><button class="btn btn-outline-danger btn-sm" onclick="clearAll()">Hapus semua</button></div></div>
+ <div class="card stat-card"><div class="list-group list-group-flush" id="list"></div></div>
+</main></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+guard(); layout('notifikasi');
+const ICON = { stok: ['fa-box', 'success'], warn: ['fa-triangle-exclamation', 'warning'], info: ['fa-circle-info', 'info'] };
+function ago(iso) { const m = Math.floor((Date.now() - new Date(iso)) / 60000);
+  if (m < 1) return 'Baru saja'; if (m < 60) return m + ' menit yang lalu'; if (m < 1440) return Math.floor(m / 60) + ' jam yang lalu';
+  return new Date(iso).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }); }
+function render() {
+  const n = load('notif');
+  document.getElementById('list').innerHTML = n.length ? n.map(x => { const [ic, c] = ICON[x.tipe] || ICON.info;
+    return `<div class="list-group-item p-3 ${x.baca ? '' : 'notif-unread'}" style="cursor:pointer" onclick="mark(${x.id})"><div class="d-flex gap-3">
+     <span class="stat-icon bg-${c}-subtle text-${c}" style="width:42px;height:42px"><i class="fas ${ic}"></i></span>
+     <div class="flex-grow-1"><div class="d-flex justify-content-between flex-wrap"><h6 class="mb-1">${esc(x.judul)}</h6><small class="text-muted">${ago(x.waktu)}</small></div>
+     <p class="mb-1 text-muted">${esc(x.pesan)}</p>${x.baca ? '' : '<span class="badge text-bg-primary">Baru</span>'}</div></div></div>`; }).join('')
+    : '<div class="p-4 text-center text-muted">Belum ada notifikasi. Tambah atau ubah stok untuk membuatnya.</div>';
+}
+function mark(id) { const n = load('notif'); const x = n.find(v => v.id === id); if (x && !x.baca) { x.baca = true; DB.set('notif', n); render(); layout('notifikasi'); } }
+function readAll() { const n = load('notif'); n.forEach(x => x.baca = true); DB.set('notif', n); render(); layout('notifikasi'); }
+function clearAll() { if (!confirm('Hapus semua notifikasi?')) return; DB.set('notif', []); render(); layout('notifikasi'); }
+render();
+</script></body></html>

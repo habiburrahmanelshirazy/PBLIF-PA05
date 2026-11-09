@@ -1,0 +1,19 @@
+body{background:#f4f7f5;padding-top:56px}
+.navbar{background:#4be24b}
+.admin-wrap{display:flex;min-height:calc(100vh - 56px)}
+.admin-side{width:230px;background:#14532d;flex-shrink:0;padding:16px 10px}
+.admin-side .side-title{color:#9fd8b0;font-size:.75rem;letter-spacing:.08em;padding:0 12px 8px}
+.admin-side a{display:block;color:#e6f5ea;text-decoration:none;padding:10px 12px;border-radius:8px;margin-bottom:4px}
+.admin-side a:hover{background:#1e6b3c}
+.admin-side a.active{background:#4be24b;color:#14532d;font-weight:700}
+.admin-main{flex:1;padding:24px;min-width:0}
+.stat-card{border:0;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.stat-icon{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff}
+.badge-menipis{background:#fbe9dd;color:#b4531a}
+.badge-cukup{background:#dff3e6;color:#1e6b3c}
+.btn-hijau{background:#1e6b3c;border-color:#1e6b3c;color:#fff}
+.btn-hijau:hover{background:#14532d;color:#fff}
+.bar{height:10px;background:#eef3f4;border-radius:6px;overflow:hidden}
+.bar span{display:block;height:100%;background:#4be24b}
+.notif-unread{background:#f0f7ff}
+@media(max-width:768px){.admin-wrap{flex-direction:column}.admin-side{width:100%}}

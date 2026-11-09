@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="id"><head><script src="admin.js"></script><script>document.write(HEAD('Dashboard'))</script></head>
+<body>
+<div id="topnav"></div>
+<div class="admin-wrap"><aside class="admin-side" id="side"></aside>
+<main class="admin-main">
+ <h3 class="mb-4">Dashboard</h3>
+ <div class="row g-3 mb-4" id="stats"></div>
+ <div class="row g-3">
+  <div class="col-lg-7"><div class="card stat-card"><div class="card-header bg-white fw-bold">Barang stok menipis</div>
+   <div class="table-responsive"><table class="table mb-0"><thead><tr><th>Barang</th><th>Stok</th><th>Min</th></tr></thead><tbody id="low"></tbody></table></div></div></div>
+  <div class="col-lg-5"><div class="card stat-card"><div class="card-header bg-white fw-bold">Estimasi belanja per kategori</div><div class="card-body" id="kat"></div></div></div>
+ </div>
+</main></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+guard(); layout('index');
+const stok = load('stok'), bel = load('belanja'), usr = load('pengguna');
+const low = stok.filter(s => s.jumlah <= s.min);
+const total = bel.filter(b => !b.dibeli).reduce((a, b) => a + b.harga, 0);
+const cards = [['Total barang', stok.length, 'fa-boxes', '#1e6b3c'], ['Stok menipis', low.length, 'fa-triangle-exclamation', '#b4531a'],
+  ['Item belanja', bel.filter(b => !b.dibeli).length, 'fa-cart-plus', '#347cc9'], ['Estimasi belanja', rupiah(total), 'fa-coins', '#14532d']];
+document.getElementById('stats').innerHTML = cards.map(([l, v, i, c]) => `<div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body d-flex align-items-center gap-3">
+ <div class="stat-icon" style="background:${c}"><i class="fas ${i}"></i></div><div><div class="text-muted small">${l}</div><div class="fs-5 fw-bold">${esc(v)}</div></div></div></div></div>`).join('');
+document.getElementById('low').innerHTML = low.length ? low.map(s => `<tr><td>${esc(s.nama)}</td><td class="text-danger fw-bold">${s.jumlah} ${esc(s.satuan)}</td><td>${s.min} ${esc(s.satuan)}</td></tr>`).join('')
+  : '<tr><td colspan="3" class="text-center text-muted py-3">Semua stok cukup.</td></tr>';
+const per = {}; bel.filter(b => !b.dibeli).forEach(b => per[b.kategori] = (per[b.kategori] || 0) + b.harga);
+const mx = Math.max(1, ...Object.values(per));
+document.getElementById('kat').innerHTML = Object.keys(per).length ? Object.entries(per).map(([k, v]) => `<div class="mb-3"><div class="d-flex justify-content-between"><span>${esc(k)}</span><b>${rupiah(v)}</b></div><div class="bar"><span style="width:${v / mx * 100}%"></span></div></div>`).join('')
+  : '<div class="text-muted">Belum ada daftar belanja.</div>';
+</script></body></html>
